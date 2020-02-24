@@ -165,12 +165,15 @@ public class MainActivity extends AppCompatActivity {
                 else
                     tempConv = 0;*/
 
+                // Renew the GraphView
                 init_display(f_val,b_val,tempConv,ADC1,ADC2);
                 if(b_val>0) {
                     graphLastXValue += 1d;
                     //if ( !Float.isNaN(tempConv) )
                     mSeries.appendData(new DataPoint(graphLastXValue, tempConv), true, 40);
                 }
+
+                // Store and Dump Temperature Record (remember to give the permission of the app on phone)
                 if(graphLastXValue%10 == 0) {
                     temp_history.add(Double.toString(tempConv));
                     if (temp_history.size() >= CLEARNUM) {
