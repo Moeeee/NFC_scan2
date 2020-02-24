@@ -18,6 +18,8 @@ import android.nfc.tech.NfcV;
 import android.os.AsyncTask;
 import java.io.IOException;
 import android.os.Handler;
+
+import java.io.OutputStreamWriter;
 import java.util.Arrays;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
@@ -27,6 +29,12 @@ import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import java.lang.*;
 import java.text.NumberFormat;
+import java.util.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import android.content.Context;
+import android.widget.Toast;
+import android.os.Environment;
 
 import static android.R.attr.delay;
 import static android.provider.AlarmClock.EXTRA_MESSAGE;
@@ -109,6 +117,11 @@ public class MainActivity extends AppCompatActivity {
         final double R0_Value = 100000.0;
         final double T0_Value = 298.15;
         final double K0_Temp = 273.15;
+        final Context context;
+        final ArrayList<String> temp_history=new ArrayList<String>();
+        final int CLEARNUM = 10;
+        final String DIRNAME = "/NFC_record/";
+        final String FILENAME = "temperature_history.txt";
 
         super.onResume();
         //Log.i("life cycle", "Called onResume");
@@ -135,23 +148,49 @@ public class MainActivity extends AppCompatActivity {
                 int tmp = (Integer.parseInt(f_val.substring(15,16), 16)<<4)+ (Integer.parseInt(f_val.substring(16,17), 16))+ (Integer.parseInt(f_val.substring(18,19), 16) << 12) + (Integer.parseInt(f_val.substring(19,20), 16) << 8);
                 ADC0 = (float)(0.9*tmp)/(float)16384; //Light Sensor
 
-                //float tempConv = (float) ((((((tmp1 * 0.9) / 16384.0) / 2.0) / 0.0000024) * 8738.13) / tmp2);
+                float tempConv = 0;
+                if (tmp2!=0){
+                    //tempConv = (float) ((((((tmp1 * 0.9) / 16384.0) / 2.0) / 0.0000024) * 8738.13) / tmp2); // equals below
+                    tempConv = (float) (ADC1 / ADC2 * R0_Value); // ADC1 and ADC2 is upside down, don't know why
+                    //tempConv = (float) ((B_Value / (Math.log10(tempConv / (R0_Value * Math.exp((-B_Value) /T0_Value))) / Math.log10(2.718))) - K0_Temp); // equals below
+                    tempConv = (float) ((1.0 / ((((Math.log10(tempConv / R0_Value) / Math.log10(2.718))) / B_Value) + (1.0 /T0_Value))) - K0_Temp);
+                }
+
                 //RTD Resistance (we can count temperature by this value though, instead of using the B-value formula, it may contains exponantial )
-                float tempConv;
+                //y = 0.0018(x-30) + 1.134 (x-temp, y-r) //x = (y-1.134) / 0.0018 + 30
+                /*float tempConv;
                 if ( tmp1!=0 ){
-                    tempConv = (float)((tmp2 / tmp1) * R0_Value);
+                    tempConv = (float)((tmp2 / tmp1) * R0_Value); //(Maybe should change to: ADC1/ADC2*R0_Value)
                     tempConv = (float)((tempConv-1.134) / 0.0018 + 30);}
                 else
-                    tempConv = 0;
-                //y = 0.0018(x-30) + 1.134 (x-temp, y-r) //x = (y-1.134) / 0.0018 + 30
-                //tempConv = (float) ((B_Value / (Math.log10(tempConv / (R0_Value * Math.exp((-B_Value) /T0_Value))) / Math.log10(2.718))) - K0_Temp);
-                //tempConv = (float) ((1.0 / ((((Math.log10(tempConv / R0_Value) / Math.log10(2.718))) / B_Value) + (1.0 /T0_Value))) - K0_Temp);
+                    tempConv = 0;*/
 
                 init_display(f_val,b_val,tempConv,ADC1,ADC2);
                 if(b_val>0) {
                     graphLastXValue += 1d;
                     //if ( !Float.isNaN(tempConv) )
                     mSeries.appendData(new DataPoint(graphLastXValue, tempConv), true, 40);
+                }
+                if(graphLastXValue%10 == 0) {
+                    temp_history.add(Double.toString(tempConv));
+                    if (temp_history.size() >= CLEARNUM) {
+                        final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM );
+                        final File file = new File(path, FILENAME);
+                        try {
+                            FileOutputStream fOut = new FileOutputStream(file, true);
+                            OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
+                            for (int i = 0; i < temp_history.size(); i++) {
+                                myOutWriter.append(temp_history.get(i));
+                                myOutWriter.append("\n\r");
+                            }
+                            myOutWriter.close();
+                            fOut.flush();
+                            fOut.close();
+                        } catch (IOException e) {
+                            Log.e("Exception", "File write failed: " + e.toString());
+                        }
+                        temp_history.clear();
+                    }
                 }
                 mHandler.postDelayed(this, 100);
             }
