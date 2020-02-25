@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.app.PendingIntent;
 import android.content.IntentFilter;
 import android.content.IntentFilter.MalformedMimeTypeException;
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -49,12 +50,25 @@ public class MainActivity extends AppCompatActivity {
     private final Handler mHandler = new Handler();
     private Runnable mTimer;
     private LineGraphSeries<DataPoint> mSeries;
+    private LineGraphSeries<DataPoint> nSeries;
     private double graphLastXValue = 5d;
 
     //display variables
     String f_val="00 00 00 00 00 00 00 00 00",text_val="Place phone on Tag";
     byte b_val=0x01,dig_op=0x00;
     public final static String EXTRA_MESSAGE = "com.example.hello.MESSAGE";
+
+    //my initialization
+    final double B_Value = 4330.0;
+    final double R0_Value = 100000.0;
+    final double T0_Value = 298.15;
+    final double K0_Temp = 273.15;
+    final int CLEARNUM = 10;
+    final String DIRNAME = "/NFC_record/";
+    final String FILENAME = "temperature_history.txt";
+    final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM );
+    final File file = new File(path, FILENAME);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,11 +79,16 @@ public class MainActivity extends AppCompatActivity {
         adc0 = (TextView) findViewById(R.id.ADC0_text);
         adc1 = (TextView) findViewById(R.id.ADC1_text);
         adc2 = (TextView) findViewById(R.id.ADC2_text);
-        b_val=1;
+        b_val=0;
         init_display(f_val, b_val,ADC0,ADC1,ADC2);
         increase = (Button) findViewById(R.id.increase);
         decrease = (Button) findViewById(R.id.decrease);
         //dig_out = (Button) findViewById(R.id.checkBox);
+
+        // initialize file status
+        if (file.exists()) {
+            file.delete();
+        }
 
         //graph initialization
         GraphView graph = (GraphView) findViewById(R.id.graph);
@@ -80,7 +99,11 @@ public class MainActivity extends AppCompatActivity {
         graph.getGridLabelRenderer().setLabelFormatter(new DefaultLabelFormatter(nf, nf));
 
         mSeries = new LineGraphSeries<>();
+        mSeries.setColor(Color.BLUE);
+        nSeries = new LineGraphSeries<>();
+        nSeries.setColor(Color.RED);
         graph.addSeries(mSeries);
+        graph.addSeries(nSeries);
         graph.getViewport().setXAxisBoundsManual(true);
         graph.getViewport().setMinX(0);
         graph.getViewport().setMaxX(40);
@@ -113,18 +136,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
 
-        final double B_Value = 4330.0;
-        final double R0_Value = 100000.0;
-        final double T0_Value = 298.15;
-        final double K0_Temp = 273.15;
-        final Context context;
-        final ArrayList<String> temp_history=new ArrayList<String>();
-        final int CLEARNUM = 10;
-        final String DIRNAME = "/NFC_record/";
-        final String FILENAME = "temperature_history.txt";
-
         super.onResume();
         //Log.i("life cycle", "Called onResume");
+
+        final ArrayList<String> temp_history=new ArrayList<String>();
 
         if (nfc != null) {
             //Declare intent filters to handle the intents that you want to intercept.
@@ -135,6 +150,7 @@ public class MainActivity extends AppCompatActivity {
             //Enable foreground dispatch to stop restart of app on detection
             nfc.enableForegroundDispatch(this, mpendingIntent, intentFiltersArray, techListsArray);
         }
+
         mTimer = new Runnable() {
             @Override
             public void run() {
@@ -171,20 +187,20 @@ public class MainActivity extends AppCompatActivity {
                     graphLastXValue += 1d;
                     //if ( !Float.isNaN(tempConv) )
                     mSeries.appendData(new DataPoint(graphLastXValue, tempConv), true, 40);
+                    nSeries.appendData(new DataPoint(graphLastXValue, ADC1*100), true, 40);
                 }
 
-                // Store and Dump Temperature Record (remember to give the permission of the app on phone)
+                // Store and Dump Temperature Record (remember to give the permission to the app on phone)
                 if(graphLastXValue%10 == 0) {
                     temp_history.add(Double.toString(tempConv));
                     if (temp_history.size() >= CLEARNUM) {
-                        final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM );
-                        final File file = new File(path, FILENAME);
                         try {
-                            FileOutputStream fOut = new FileOutputStream(file, true);
+                            FileOutputStream fOut = new FileOutputStream(file, true); // true is for append instead of open a new one
                             OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
                             for (int i = 0; i < temp_history.size(); i++) {
+                                myOutWriter.append((graphLastXValue/10-(9-i)) + "s ");
                                 myOutWriter.append(temp_history.get(i));
-                                myOutWriter.append("\n\r");
+                                myOutWriter.append("\n");
                             }
                             myOutWriter.close();
                             fOut.flush();
