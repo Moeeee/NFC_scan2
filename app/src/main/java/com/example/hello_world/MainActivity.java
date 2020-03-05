@@ -41,10 +41,10 @@ import static android.R.attr.delay;
 import static android.provider.AlarmClock.EXTRA_MESSAGE;
 
 public class MainActivity extends AppCompatActivity {
-    TextView Value,Byte_text,text_view,adc0,adc1,adc2;
+    TextView Value,Byte_text,text_view,adc0,adc1,adc2,temperature;
     Button increase, decrease,dig_out;
     private NfcAdapter nfc;
-    float ADC0=0,ADC1=0,ADC2=0;
+    float ADC0=0,ADC1=0,ADC2=0, tempConv=0;
     private PendingIntent mpendingIntent;
     //graph var
     private final Handler mHandler = new Handler();
@@ -66,8 +66,8 @@ public class MainActivity extends AppCompatActivity {
     final int CLEARNUM = 10;
     final String DIRNAME = "/NFC_record/";
     final String FILENAME = "temperature_history.txt";
-    final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM );
-    final File file = new File(path, FILENAME);
+    final String FILENAME_2 = "ADC0_history.txt";
+    final File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,13 +79,19 @@ public class MainActivity extends AppCompatActivity {
         adc0 = (TextView) findViewById(R.id.ADC0_text);
         adc1 = (TextView) findViewById(R.id.ADC1_text);
         adc2 = (TextView) findViewById(R.id.ADC2_text);
+        temperature = (TextView) findViewById(R.id.temperature_text);
         b_val=0;
-        init_display(f_val, b_val,ADC0,ADC1,ADC2);
+        init_display(f_val, b_val,ADC0,ADC1,ADC2,tempConv);
         increase = (Button) findViewById(R.id.increase);
         decrease = (Button) findViewById(R.id.decrease);
         //dig_out = (Button) findViewById(R.id.checkBox);
 
-        // initialize file status
+        // initialize file status: delete existed files
+        File file = new File(path, FILENAME);
+        if (file.exists()) {
+            file.delete();
+        }
+        file = new File(path, FILENAME_2);
         if (file.exists()) {
             file.delete();
         }
@@ -140,6 +146,7 @@ public class MainActivity extends AppCompatActivity {
         //Log.i("life cycle", "Called onResume");
 
         final ArrayList<String> temp_history=new ArrayList<String>();
+        final ArrayList<String> ADC0_history=new ArrayList<String>();
 
         if (nfc != null) {
             //Declare intent filters to handle the intents that you want to intercept.
@@ -164,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
                 int tmp = (Integer.parseInt(f_val.substring(15,16), 16)<<4)+ (Integer.parseInt(f_val.substring(16,17), 16))+ (Integer.parseInt(f_val.substring(18,19), 16) << 12) + (Integer.parseInt(f_val.substring(19,20), 16) << 8);
                 ADC0 = (float)(0.9*tmp)/(float)16384; //Light Sensor
 
-                float tempConv = 0;
+                tempConv = 0;
                 if (tmp2!=0){
                     //tempConv = (float) ((((((tmp1 * 0.9) / 16384.0) / 2.0) / 0.0000024) * 8738.13) / tmp2); // equals below
                     tempConv = (float) (ADC1 / ADC2 * R0_Value); // ADC1 and ADC2 is upside down, don't know why
@@ -181,8 +188,8 @@ public class MainActivity extends AppCompatActivity {
                 else
                     tempConv = 0;*/
 
-                // Renew the GraphView
-                init_display(f_val,b_val,tempConv,ADC1,ADC2);
+                // Renew the value and the GraphView
+                init_display(f_val,b_val,ADC0,ADC1,ADC2,tempConv);
                 if(b_val>0) {
                     graphLastXValue += 1d;
                     //if ( !Float.isNaN(tempConv) )
@@ -192,14 +199,29 @@ public class MainActivity extends AppCompatActivity {
 
                 // Store and Dump Temperature Record (remember to give the permission to the app on phone)
                 if(graphLastXValue%10 == 0) {
+                    ADC0_history.add(Double.toString(ADC0));
                     temp_history.add(Double.toString(tempConv));
                     if (temp_history.size() >= CLEARNUM) {
                         try {
+                            // dump temperature to file (should use for loop if there are too many files to be dumped)
+                            File file = new File(path, FILENAME);
                             FileOutputStream fOut = new FileOutputStream(file, true); // true is for append instead of open a new one
                             OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
                             for (int i = 0; i < temp_history.size(); i++) {
                                 myOutWriter.append((graphLastXValue/10-(9-i)) + "s ");
                                 myOutWriter.append(temp_history.get(i));
+                                myOutWriter.append("\n");
+                            }
+                            myOutWriter.close(); // must close and flush and then is able to write another,,don't know why
+                            fOut.flush();
+                            fOut.close();
+                            // dump ADC0 to file
+                            file = new File(path, FILENAME_2);
+                            fOut = new FileOutputStream(file, true);
+                            myOutWriter = new OutputStreamWriter(fOut);
+                            for (int i = 0; i < ADC0_history.size(); i++) {
+                                myOutWriter.append((graphLastXValue/10-(9-i)) + "s ");
+                                myOutWriter.append(ADC0_history.get(i));
                                 myOutWriter.append("\n");
                             }
                             myOutWriter.close();
@@ -209,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.e("Exception", "File write failed: " + e.toString());
                         }
                         temp_history.clear();
+                        ADC0_history.clear();
                     }
                 }
                 mHandler.postDelayed(this, 100);
@@ -445,14 +468,14 @@ public class MainActivity extends AppCompatActivity {
     public void decrease_func(View view)
     {
         b_val=0;
-        init_display(f_val, b_val,ADC0,ADC1,ADC2);
+        init_display(f_val, b_val,ADC0,ADC1,ADC2,tempConv);
         //Log.i("decrease", "pressed button global");
     }
 
     public void increase_func(View view)
     {
         b_val=1;
-        init_display(f_val, b_val,ADC0,ADC1,ADC2);
+        init_display(f_val, b_val,ADC0,ADC1,ADC2,tempConv);
         //Log.i("increase ", "pressed button global");
     }
 
@@ -475,15 +498,16 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }*/
 
-    protected void init_display(String disp_value,byte disp_byte,float disp_ADC0,float disp_ADC1,float disp_ADC2)  {
+    protected void init_display(String disp_value,byte disp_byte,float disp_ADC0,float disp_ADC1,float disp_ADC2, float disp_temperature)  {
         //display float
         Value.setText("Value: " + disp_value);
         //Display byte
         //Byte_text.setText("Status : " + ((disp_byte > 0) ? "running" : "stopped"));
         //display ADC0
-        adc0.setText("Temperature: "+String.valueOf(disp_ADC0)+ " °C");
+        adc0.setText("ADC0: "+String.valueOf(disp_ADC0)+ " V");
         adc1.setText("ADC1: "+String.valueOf(disp_ADC1)+ " V");
         adc2.setText("ADC2: "+String.valueOf(disp_ADC2)+ " V");
+        temperature.setText("Temperature: "+String.valueOf(disp_temperature)+ " °C");
 
     }
 

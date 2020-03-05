@@ -9,6 +9,54 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.example.hello_world.MainActivity">
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="NFC tag"
+        android:id="@+id/textView"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:text="Value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="68dp"
+        android:id="@+id/Value_text"
+        android:layout_below="@+id/textView"
+        android:layout_alignStart="@+id/increase" />
+
+    <TextView
+        android:text="ADC0:"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/Value_text"
+        android:layout_alignStart="@+id/Value_text"
+        android:id="@+id/ADC0_text" />
+
+    <TextView
+        android:text="ADC1:"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ADC0_text"
+        android:layout_alignStart="@+id/Value_text"
+        android:id="@+id/ADC1_text" />
+
+    <TextView
+        android:text="ADC2:"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ADC1_text"
+        android:layout_alignStart="@+id/Value_text"
+        android:id="@+id/ADC2_text"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/ADC2_text"
+        android:layout_alignStart="@+id/Value_text"
+        android:id="@+id/temperature_text"/>
+
     <Button
         android:text="Start"
         android:layout_width="wrap_content"
@@ -20,32 +68,6 @@
         android:id="@+id/increase"
         android:onClick="increase_func"/>
 
-    <TextView
-        android:text="Value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="68dp"
-        android:id="@+id/Value_text"
-        android:layout_below="@+id/textView"
-        android:layout_alignStart="@+id/increase" />
-
-    <!--TextView
-        android:text="Byte"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/Value_text"
-        android:layout_alignStart="@+id/Value_text"
-        android:layout_marginTop="54dp"
-        android:id="@+id/Byte_text" /-->
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="NFC tag"
-        android:id="@+id/textView"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentStart="true" />
-
     <Button
         android:text="Stop"
         android:layout_width="wrap_content"
@@ -56,30 +78,6 @@
         android:id="@+id/decrease"
         android:onClick="decrease_func"/>
 
-    <TextView
-        android:text="ADC1:"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/Value_text"
-        android:layout_alignStart="@+id/Value_text"
-        android:id="@+id/ADC1_text" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/ADC1_text"
-        android:layout_alignStart="@+id/ADC1_text"
-        android:id="@+id/ADC2_text"
-        android:text="ADC2:" />
-
-    <TextView
-        android:text="ADC0:"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/ADC2_text"
-        android:layout_alignStart="@+id/ADC1_text"
-        android:id="@+id/ADC0_text" />
-
     <com.jjoe64.graphview.GraphView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -88,6 +86,15 @@
         android:layout_above="@+id/increase"
         android:layout_alignParentStart="true"
         android:layout_marginTop="43dp" />
+
+    <!--TextView
+        android:text="Byte"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/Value_text"
+        android:layout_alignStart="@+id/Value_text"
+        android:layout_marginTop="54dp"
+        android:id="@+id/Byte_text" /-->
 
     <!--Button
     android:text="Change"
